@@ -2,7 +2,7 @@
 
     File: main.m
 Abstract: Entry point for all applications. Creates the application object, sets its delegate, and causes the event loop to start.
- Version: 1.2
+ Version: 1.5
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Inc. ("Apple") in consideration of your agreement to the following

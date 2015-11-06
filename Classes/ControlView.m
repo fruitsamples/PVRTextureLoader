@@ -2,7 +2,7 @@
 
     File: ControlView.m
 Abstract: ControlView is a UIView subclass responsible for displaying and hidding controls.
- Version: 1.2
+ Version: 1.5
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Inc. ("Apple") in consideration of your agreement to the following

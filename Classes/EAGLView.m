@@ -2,7 +2,7 @@
 
     File: EAGLView.m
 Abstract: The EAGLView class is responsible for rendering the GL view.
- Version: 1.2
+ Version: 1.5
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Inc. ("Apple") in consideration of your agreement to the following

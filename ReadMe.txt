@@ -12,12 +12,12 @@ Further details are given as comments in the code.
 ===========================================================================
 BUILD REQUIREMENTS:
 
-Mac OS X 10.5.3, Xcode 3.1, iPhone OS 2.2
+iOS 4.0 SDK
 
 ===========================================================================
 RUNTIME REQUIREMENTS:
 
-Mac OS X 10.5.3, iPhone OS 2.0
+iPhone OS 3.2 or later
 
 ===========================================================================
 PACKAGING LIST:
@@ -40,6 +40,15 @@ These are the pvr files generated from the Brick.png image by the "Encode Images
 ===========================================================================
 CHANGES FROM PREVIOUS VERSIONS:
 
+Version 1.5 
+- Changed deployment target back to iPhone OS 3.2 and added CFBundleIconFiles in Info.plist.
+
+Version 1.4
+- Upgraded project to build with the iOS 4 SDK.
+
+Version 1.3
+- Modified the script so that it works regardless of where texturetool is installed.
+
 Version 1.2
 - Check for availablility of any GL extensions used. Disable UI if extensions aren't present.
 - Set proper min filter param depending on if texture is going to be mipmapped or not. This provides a hint to GL in order to help decrease memory usage.
@@ -53,4 +62,4 @@ Version 1.0
 - First version.
 
 ===========================================================================
-Copyright (C) 2008-2009 Apple Inc. All rights reserved.
+Copyright (C) 2008-2010 Apple Inc. All rights reserved.

@@ -2,7 +2,7 @@
 
     File: MyViewController.m
 Abstract: MyViewController is the view controller responsible for managing the views that make up the user interface.
- Version: 1.2
+ Version: 1.5
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Inc. ("Apple") in consideration of your agreement to the following

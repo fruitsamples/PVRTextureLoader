@@ -2,7 +2,7 @@
 
     File: PVRTextureLoaderAppDelegate.h
 Abstract: PVRTextureLoaderAppDelegate is responsible for adding the view controller's view at launch.
- Version: 1.2
+ Version: 1.5
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Inc. ("Apple") in consideration of your agreement to the following

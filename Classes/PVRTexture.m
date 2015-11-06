@@ -2,7 +2,7 @@
 
     File: PVRTexture.m
 Abstract: The PVRTexture class is responsible for loading .pvr files.
- Version: 1.2
+ Version: 1.5
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Inc. ("Apple") in consideration of your agreement to the following
