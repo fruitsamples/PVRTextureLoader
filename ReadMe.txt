@@ -40,6 +40,12 @@ These are the pvr files generated from the Brick.png image by the "Encode Images
 ===========================================================================
 CHANGES FROM PREVIOUS VERSIONS:
 
+Version 1.2
+- Check for availablility of any GL extensions used. Disable UI if extensions aren't present.
+- Set proper min filter param depending on if texture is going to be mipmapped or not. This provides a hint to GL in order to help decrease memory usage.
+- Use calloc instead of malloc when allocating memory for use in texture generation. We need to guarantee that our memory is zero filled for the cases where the 
+  dimensions of the cg image might be smaller than the cg bitmap context. Set the kCGBlendModeCopy flag since we don't care about the previous contents of memory.
+
 Version 1.1
 - Quote instances of $SRCROOT variable in the encode shell script to handle paths with spaces.
 

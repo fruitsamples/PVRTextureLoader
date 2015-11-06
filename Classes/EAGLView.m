@@ -1,47 +1,49 @@
 /*
 
-File: EAGLView.m
+    File: EAGLView.m
 Abstract: The EAGLView class is responsible for rendering the GL view.
+ Version: 1.2
 
-Version: <1.1>
+Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
+Inc. ("Apple") in consideration of your agreement to the following
+terms, and your use, installation, modification or redistribution of
+this Apple software constitutes acceptance of these terms.  If you do
+not agree with these terms, please do not use, install, modify or
+redistribute this Apple software.
 
-Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple Inc.
-("Apple") in consideration of your agreement to the following terms, and your
-use, installation, modification or redistribution of this Apple software
-constitutes acceptance of these terms.  If you do not agree with these terms,
-please do not use, install, modify or redistribute this Apple software.
+In consideration of your agreement to abide by the following terms, and
+subject to these terms, Apple grants you a personal, non-exclusive
+license, under Apple's copyrights in this original Apple software (the
+"Apple Software"), to use, reproduce, modify and redistribute the Apple
+Software, with or without modifications, in source and/or binary forms;
+provided that if you redistribute the Apple Software in its entirety and
+without modifications, you must retain this notice and the following
+text and disclaimers in all such redistributions of the Apple Software.
+Neither the name, trademarks, service marks or logos of Apple Inc. may
+be used to endorse or promote products derived from the Apple Software
+without specific prior written permission from Apple.  Except as
+expressly stated in this notice, no other rights or licenses, express or
+implied, are granted by Apple herein, including but not limited to any
+patent rights that may be infringed by your derivative works or by other
+works in which the Apple Software may be incorporated.
 
-In consideration of your agreement to abide by the following terms, and subject
-to these terms, Apple grants you a personal, non-exclusive license, under
-Apple's copyrights in this original Apple software (the "Apple Software"), to
-use, reproduce, modify and redistribute the Apple Software, with or without
-modifications, in source and/or binary forms; provided that if you redistribute
-the Apple Software in its entirety and without modifications, you must retain
-this notice and the following text and disclaimers in all such redistributions
-of the Apple Software.
-Neither the name, trademarks, service marks or logos of Apple Inc. may be used
-to endorse or promote products derived from the Apple Software without specific
-prior written permission from Apple.  Except as expressly stated in this notice,
-no other rights or licenses, express or implied, are granted by Apple herein,
-including but not limited to any patent rights that may be infringed by your
-derivative works or by other works in which the Apple Software may be
-incorporated.
+The Apple Software is provided by Apple on an "AS IS" basis.  APPLE
+MAKES NO WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION
+THE IMPLIED WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE, REGARDING THE APPLE SOFTWARE OR ITS USE AND
+OPERATION ALONE OR IN COMBINATION WITH YOUR PRODUCTS.
 
-The Apple Software is provided by Apple on an "AS IS" basis.  APPLE MAKES NO
-WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED
-WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE, REGARDING THE APPLE SOFTWARE OR ITS USE AND OPERATION ALONE OR IN
-COMBINATION WITH YOUR PRODUCTS.
+IN NO EVENT SHALL APPLE BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL
+OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION,
+MODIFICATION AND/OR DISTRIBUTION OF THE APPLE SOFTWARE, HOWEVER CAUSED
+AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
+STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 
-IN NO EVENT SHALL APPLE BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION, MODIFICATION AND/OR
-DISTRIBUTION OF THE APPLE SOFTWARE, HOWEVER CAUSED AND WHETHER UNDER THEORY OF
-CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY OR OTHERWISE, EVEN IF
-APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+Copyright (C) 2010 Apple Inc. All Rights Reserved.
 
-Copyright (C) 2008-2009 Apple Inc. All Rights Reserved.
 
 */
 
@@ -67,6 +69,9 @@ Copyright (C) 2008-2009 Apple Inc. All Rights Reserved.
 
 @implementation EAGLView
 
+@synthesize compressionSupported = _compressionSupported;
+@synthesize anisotropySupported = _anisotropySupported;
+
 @dynamic compressionSetting;
 @dynamic mipmapFilterSetting;
 @dynamic filterSetting;
@@ -79,7 +84,7 @@ Copyright (C) 2008-2009 Apple Inc. All Rights Reserved.
 	UIImage *image;
 	int width, height;
 	CGImageRef cgImage;
-	void *data;
+	GLubyte *data;
 	CGContextRef cgContext;
 	CGColorSpaceRef colorSpace;
 	GLenum err;
@@ -96,14 +101,23 @@ Copyright (C) 2008-2009 Apple Inc. All Rights Reserved.
 	height = CGImageGetHeight(cgImage);
 	colorSpace = CGColorSpaceCreateDeviceRGB();
 
-	data = malloc(width * height * 4);
-	cgContext = CGBitmapContextCreate(data, width, height, 8, width * 4, colorSpace, kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Big);
+	// Malloc may be used instead of calloc if your cg image has dimensions equal to the dimensions of the cg bitmap context
+	data = (GLubyte *)calloc(width * height * 4, sizeof(GLubyte));
+	cgContext = CGBitmapContextCreate(data, width, height, 8, width * 4, colorSpace, kCGImageAlphaPremultipliedLast);
 	if (cgContext != NULL)
 	{
+		// Set the blend mode to copy. We don't care about the previous contents.
+		CGContextSetBlendMode(cgContext, kCGBlendModeCopy);
 		CGContextDrawImage(cgContext, CGRectMake(0.0f, 0.0f, width, height), cgImage);
 		
 		glGenTextures(1, &(_textures[texture]));
 		glBindTexture(GL_TEXTURE_2D, _textures[texture]);
+		
+		if (mipmap)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		else
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		
 		if (mipmap)
@@ -123,22 +137,25 @@ Copyright (C) 2008-2009 Apple Inc. All Rights Reserved.
 
 - (void)loadTextures
 {
-	PVRTexture *pvrTexture;
-	NSArray *names = [NSArray arrayWithObjects:@"Brick_mipmap_4", @"Brick_mipmap_2", @"Brick_4", @"Brick_2", nil];
-
-	[EAGLContext setCurrentContext:_context];
-	
-	[_pvrTextures removeAllObjects];
-	
-	for (int i=0; i < [names count]; i++)
+	if (_compressionSupported)
 	{
-		pvrTexture = [PVRTexture pvrTextureWithContentsOfFile:[[NSBundle mainBundle] pathForResource:[names objectAtIndex:i] ofType:@"pvr"]];
-		if (pvrTexture == nil)
-			NSLog(@"Failed to load %@.pvr", [names objectAtIndex:i]);
-		else
-			_textures[i] = [pvrTexture name];
+		PVRTexture *pvrTexture;
+		NSArray *names = [NSArray arrayWithObjects:@"Brick_mipmap_4", @"Brick_mipmap_2", @"Brick_4", @"Brick_2", nil];
+
+		[EAGLContext setCurrentContext:_context];
 		
-		[_pvrTextures addObject:pvrTexture];
+		[_pvrTextures removeAllObjects];
+		
+		for (int i=0; i < [names count]; i++)
+		{
+			pvrTexture = [PVRTexture pvrTextureWithContentsOfFile:[[NSBundle mainBundle] pathForResource:[names objectAtIndex:i] ofType:@"pvr"]];
+			if (pvrTexture == nil)
+				NSLog(@"Failed to load %@.pvr", [names objectAtIndex:i]);
+			else
+				_textures[i] = [pvrTexture name];
+			
+			[_pvrTextures addObject:pvrTexture];
+		}
 	}
 	
 	[self loadImageFile:@"Brick" ofType:@"png" mipmap:TRUE texture:kTextureMipmap];
@@ -265,6 +282,15 @@ Copyright (C) 2008-2009 Apple Inc. All Rights Reserved.
 }
 
 
+- (BOOL)extensionSupported:(NSString *)name
+{
+	NSString *extensionsString = [NSString stringWithCString:(char *)glGetString(GL_EXTENSIONS) encoding:NSUTF8StringEncoding];
+	NSArray *extensionsNames = [extensionsString componentsSeparatedByString:@" "];
+	
+	return [extensionsNames containsObject:name];
+}
+
+
 // The GL view is stored in the nib file. When it's unarchived it's sent -initWithCoder:
 - (id)initWithCoder:(NSCoder*)coder
 {    
@@ -295,6 +321,14 @@ Copyright (C) 2008-2009 Apple Inc. All Rights Reserved.
 		_minTexParam = GL_NEAREST;
 		_magTexParam = GL_NEAREST;
 		_anisotropyTexParam = 1.0f;
+		
+		// PVRTC textures will not be loaded if the PVRTC extension is not supported.
+		// UI selection for compression levels will also be disabled.
+		_compressionSupported = [self extensionSupported:@"GL_IMG_texture_compression_pvrtc"];
+		
+		// The use of GL_TEXTURE_MAX_ANISOTROPY_EXT will be avoided if anisotropic filtering is not supported.
+		// UI selection for anisotropic filtering will also be disabled.
+		_anisotropySupported = [self extensionSupported:@"GL_EXT_texture_filter_anisotropic"];
 		
 		_pvrTextures = [[NSMutableArray alloc] initWithCapacity:10];
 		
@@ -350,7 +384,8 @@ Copyright (C) 2008-2009 Apple Inc. All Rights Reserved.
 	glBindTexture(GL_TEXTURE_2D, _textures[_texSelection]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, _minTexParam);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, _magTexParam);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, _anisotropyTexParam);
+	if (_anisotropySupported)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, _anisotropyTexParam);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	
